@@ -60,3 +60,5 @@ services:
       - POSTGRES_USER=partdb_user
       - POSTGRES_PASSWORD=partdb_password
     restart: unless-stopped
+    networks:
+      - tipi_main_network # That should not be changed
