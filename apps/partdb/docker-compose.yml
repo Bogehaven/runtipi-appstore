@@ -6,18 +6,18 @@ services:
     restart: unless-stopped # Do not change this
     environment:
       - TZ=${TZ} # Can use any env variable. See "environment variables" section in the docs
-    volumes:
-      - ${APP_DATA_DIR}/data/config:/config # Always start the path with ${APP_DATA_DIR}/data/. This will put all data inside app-data/my-app/data
-      - ${APP_DATA_DIR}/data/projects:/projects
-      - DATABASE_URL="postgresql://partdb_user:partdb_password@postgres:5432/partdb"
+      - DATABASE_URL=postgresql://partdb_user:partdb_password@postgres:5432/partdb
       - APP_ENV=docker
       - DEFAULT_LANG=en
-      - DEFAULT_TIMEZONE=Europe/Berlin
+      - DEFAULT_TIMEZONE=Europe/Copenhagen
       - BASE_CURRENCY=EUR
       - INSTANCE_NAME=Part-DB
       - ALLOW_ATTACHMENT_DOWNLOADS=1
       - USE_GRAVATAR=0
       - PROVIDER_LCSC_ENABLED=1
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/config # Always start the path with ${APP_DATA_DIR}/data/. This will put all data inside app-data/my-app/data
+      - ${APP_DATA_DIR}/data/projects:/projects
     depends_on:
       - postgres
     ports:
