@@ -1,0 +1,63 @@
+version: "3.9"
+services:
+  partdb: # Should be exact same name as "id" field in config.json
+    container_name: partdb # Should be exact same name as "id" field in config.json
+    image: jbtronics/part-db1:latest # Try to avoid "latest" tag. As it may break configs in the future.
+    restart: unless-stopped # Do not change this
+    environment:
+      - TZ=${TZ} # Can use any env variable. See "environment variables" section in the docs
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/config # Always start the path with ${APP_DATA_DIR}/data/. This will put all data inside app-data/my-app/data
+      - ${APP_DATA_DIR}/data/projects:/projects
+      - DATABASE_URL=postgresql://partdb_user:partdb_password@postgres:5432/partdb
+      - APP_ENV=docker
+      - DEFAULT_LANG=en
+      - DEFAULT_TIMEZONE=Europe/Berlin
+      - BASE_CURRENCY=EUR
+      - INSTANCE_NAME=Part-DB
+      - ALLOW_ATTACHMENT_DOWNLOADS=1
+      - USE_GRAVATAR=0
+      - PROVIDER_LCSC_ENABLED=1
+    depends_on:
+      - postgres
+    ports:
+      - ${APP_PORT}:80
+    restart: unless-stopped
+    networks:
+      - tipi_main_network # That should not be changed
+    labels: # Use your editors search and replace feature to replace all instances of "myapp" with your app name in the traefik labels
+      # Main
+      traefik.enable: true
+      traefik.http.middlewares.partdb-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.partdb.loadbalancer.server.port: 8443 # Should be the same as the app internal port so for this example 9443
+      # Web
+      traefik.http.routers.partdb-insecure.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.partdb-insecure.entrypoints: web
+      traefik.http.routers.partdb-insecure.service: partdb
+      traefik.http.routers.partdb-insecure.middlewares: partdb-web-redirect
+      # Websecure
+      traefik.http.routers.partdb.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.partdb.entrypoints: websecure
+      traefik.http.routers.partdb.service: partdb
+      traefik.http.routers.partdb.tls.certresolver: myresolver
+      # Local domain
+      traefik.http.routers.partdb-local-insecure.rule: Host(`partdb.${LOCAL_DOMAIN}`)
+      traefik.http.routers.partdb-local-insecure.entrypoints: web
+      traefik.http.routers.partdb-local-insecure.service: partdb
+      traefik.http.routers.partdb-local-insecure.middlewares: partdb-web-redirect
+      # Local domain secure
+      traefik.http.routers.partdb-local.rule: Host(`partdb.${LOCAL_DOMAIN}`)
+      traefik.http.routers.partdb-local.entrypoints: websecure
+      traefik.http.routers.partdb-local.service: partdb
+      traefik.http.routers.partdb-local.tls: true
+
+  postgres:
+    container_name: postgres
+    image: postgres:12
+    volumes:
+      - ${APP_DATA_DIR}/data/postgres:/var/lib/postgresql/data
+    environment:
+      - POSTGRES_DB=partdb
+      - POSTGRES_USER=partdb_user
+      - POSTGRES_PASSWORD=partdb_password
+    restart: unless-stopped
