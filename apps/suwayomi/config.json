@@ -12,5 +12,8 @@
   "author": "Suwayomi",
   "source": "https://github.com/Suwayomi/docker-tachidesk",
   "form_fields": [],
-  "supported_architectures": ["arm64", "amd64", "arm"]
+  "supported_architectures": ["arm64", "amd64"],
+  "created_at": 1691943801422,
+  "updated_at": 1723566283000,
+  "$schema": "../app-info-schema.json"
 }
