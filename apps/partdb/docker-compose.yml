@@ -1,9 +1,9 @@
 version: "3.9"
 services:
-  partdb: # Should be exact same name as "id" field in config.json
-    container_name: partdb # Should be exact same name as "id" field in config.json
-    image: jbtronics/part-db1:latest # Try to avoid "latest" tag. As it may break configs in the future.
-    restart: unless-stopped # Do not change this
+  partdb:
+    container_name: partdb
+    image: jbtronics/part-db1:v1.15.1
+    restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql://${PG_USER}:${PG_PASSWORD}@${PG_HOST}:${PG_PORT}/partdb?serverVersion=${PG_VERSION}&charset=UTF8
       - APP_ENV=docker
@@ -16,18 +16,17 @@ services:
       - PROVIDER_LCSC_ENABLED=1
       - TRUSTED_PROXIES=127.0.0.0/8,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16
     volumes:
-      - ${APP_DATA_DIR}/data/config:/config # Always start the path with ${APP_DATA_DIR}/data/. This will put all data inside app-data/my-app/data
+      - ${APP_DATA_DIR}/data/config:/config
       - ${APP_DATA_DIR}/data/projects:/projects
     ports:
       - ${APP_PORT}:80
-    restart: unless-stopped
     networks:
-      - tipi_main_network # That should not be changed
-    labels: # Use your editors search and replace feature to replace all instances of "myapp" with your app name in the traefik labels
+      - tipi_main_network
+    labels:
       # Main
       traefik.enable: true
       traefik.http.middlewares.partdb-web-redirect.redirectscheme.scheme: https
-      traefik.http.services.partdb.loadbalancer.server.port: ${APP_PORT} # Should be the same as the app internal port so for this example 9443
+      traefik.http.services.partdb.loadbalancer.server.port: ${APP_PORT}
       # Web
       traefik.http.routers.partdb-insecure.rule: Host(`${APP_DOMAIN}`)
       traefik.http.routers.partdb-insecure.entrypoints: web
