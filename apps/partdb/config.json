@@ -46,6 +46,14 @@
     },
     {
       "type": "text",
+      "label": "Postgres Major Version",
+      "max": 2,
+      "min": 2,
+      "required": true,
+      "env_variable": "PG_VERSION"
+    },
+    {
+      "type": "text",
       "label": "Language",
       "max": 2,
       "min": 2,
