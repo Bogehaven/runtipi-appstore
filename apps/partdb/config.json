@@ -5,11 +5,69 @@
   "short_desc": "Its an awesome app!",
   "author": "me",
   "port": 5020,
-  "categories": ["development", "ai"],
+  "categories": ["development"],
   "description": "This app does x thing and y thing.",
   "tipi_version": 1,
   "version": "v1.5.7",
   "source": "https://github.com/me/my-awesome-app",
   "exposable": true,
   "supported_architectures": ["arm64", "amd64"]
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Postgres username",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_USER"
+    },
+    {
+      "type": "password",
+      "label": "Postgres Password",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_PASSWORD"
+    },
+    {
+      "type": "text",
+      "label": "Postgres Host",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_HOST"
+    },
+    {
+      "type": "text",
+      "label": "Postgres Port",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_PORT"
+    },
+    {
+      "type": "text",
+      "label": "Language",
+      "max": 50,
+      "min": 2,
+      "required": true,
+      "env_variable": "DEFAULT_LANG"
+    },
+    {
+      "type": "text",
+      "label": "Timezone",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "DEFAULT_TIMEZONE"
+    },
+    {
+      "type": "text",
+      "label": "Currency",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "BASE_CURRENCY"
+    }
+  ]
 }
