@@ -1,0 +1,132 @@
+version: '3.9'
+
+services:
+  maxun_db:
+    container_name: maxun_db
+    image: postgres:13
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tipi_main_network
+
+  maxun_redis:
+    container_name: maxun_redis
+    image: redis:6
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/data/redis:/data
+    networks:
+      - tipi_main_network
+
+  maxun_minio:
+    container_name: maxun_minio
+    image: minio/minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY}
+    command: server /data --console-address :9001
+    volumes:
+      - ${APP_DATA_DIR}/data/minio:/data
+    networks:
+      - tipi_main_network
+
+  maxun_backend:
+    container_name: maxun_backend
+    image: getmaxun/maxun-backend:latest
+    restart: unless-stopped
+    environment:
+      BACKEND_URL: https://${APP_DOMAIN}
+      VITE_BACKEND_URL: https://${APP_DOMAIN}
+      PUBLIC_URL: https://${APP_DOMAIN}
+      VITE_PUBLIC_URL: https://${APP_DOMAIN}
+      BACKEND_PORT: 8080
+      FRONTEND_PORT: ${APP_PORT}
+      JWT_SECRET: ${JWT_SECRET}
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: maxun_db
+      DB_PORT: 5432
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY}
+      MINIO_ENDPOINT: maxun_minio
+      MINIO_PORT: 9000
+      MINIO_CONSOLE_PORT: 9001
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY}
+      REDIS_HOST: maxun_redis
+      REDIS_PORT: 6379
+      MAXUN_TELEMETRY: ${MAXUN_TELEMETRY:-true}
+      PLAYWRIGHT_BROWSERS_PATH: /ms-playwright
+      PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 0
+      CHROMIUM_FLAGS: '--disable-gpu --no-sandbox --headless=new'
+      TZ: ${TZ}
+    security_opt:
+      - seccomp=unconfined
+    shm_size: '2gb'
+    depends_on:
+      maxun_db:
+        condition: service_healthy
+      maxun_redis:
+        condition: service_started
+      maxun_minio:
+        condition: service_started
+    volumes:
+      - /var/run/dbus:/var/run/dbus
+    networks:
+      - tipi_main_network
+
+  maxun:
+    container_name: maxun
+    image: getmaxun/maxun-frontend:latest
+    restart: unless-stopped
+    ports:
+      - ${APP_PORT}:5173
+    environment:
+      PUBLIC_URL: https://${APP_DOMAIN}
+      VITE_PUBLIC_URL: https://${APP_DOMAIN}
+      BACKEND_URL: http://maxun_backend:8080
+      VITE_BACKEND_URL: https://${APP_DOMAIN}
+      TZ: ${TZ}
+    depends_on:
+      - maxun_backend
+    networks:
+      - tipi_main_network
+    labels:
+      traefik.enable: true
+      traefik.http.middlewares.maxun-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.maxun.loadbalancer.server.port: 5173
+      # Web
+      traefik.http.routers.maxun-insecure.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.maxun-insecure.entrypoints: web
+      traefik.http.routers.maxun-insecure.service: maxun
+      traefik.http.routers.maxun-insecure.middlewares: maxun-web-redirect
+      # Websecure
+      traefik.http.routers.maxun.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.maxun.entrypoints: websecure
+      traefik.http.routers.maxun.service: maxun
+      traefik.http.routers.maxun.tls.certresolver: myresolver
+      # Local domain
+      traefik.http.routers.maxun-local-insecure.rule: Host(`maxun.${LOCAL_DOMAIN}`)
+      traefik.http.routers.maxun-local-insecure.entrypoints: web
+      traefik.http.routers.maxun-local-insecure.service: maxun
+      traefik.http.routers.maxun-local-insecure.middlewares: maxun-web-redirect
+      # Local domain secure
+      traefik.http.routers.maxun-local.rule: Host(`maxun.${LOCAL_DOMAIN}`)
+      traefik.http.routers.maxun-local.entrypoints: websecure
+      traefik.http.routers.maxun-local.service: maxun
+      traefik.http.routers.maxun-local.tls: true
+
+networks:
+  tipi_main_network:
+    external: true
