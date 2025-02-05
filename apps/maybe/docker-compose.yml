@@ -1,0 +1,76 @@
+version: '3.9'
+
+services:
+  maybe:
+    container_name: maybe
+    image: ghcr.io/maybe-finance/maybe:latest
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/data/storage:/rails/storage
+    ports:
+      - ${APP_PORT}:3000
+    environment:
+      SELF_HOSTED: "true"
+      RAILS_FORCE_SSL: "false"
+      RAILS_ASSUME_SSL: "false"
+      GOOD_JOB_EXECUTION_MODE: async
+      SECRET_KEY_BASE: ${SECRET_KEY_BASE}
+      DB_HOST: ${USE_EXTERNAL_DB:+$EXTERNAL_DB_HOST}${USE_EXTERNAL_DB:-maybe_db}
+      DB_PORT: ${USE_EXTERNAL_DB:+$EXTERNAL_DB_PORT}
+      POSTGRES_DB: ${POSTGRES_DB:-maybe_production}
+      POSTGRES_USER: ${POSTGRES_USER:-maybe_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      TZ: ${TZ}
+    depends_on:
+      ${USE_EXTERNAL_DB:-maybe_db}:
+        condition: service_healthy
+    networks:
+      - tipi_main_network
+    labels:
+      traefik.enable: true
+      traefik.http.middlewares.maybe-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.maybe.loadbalancer.server.port: 3000
+      # Web
+      traefik.http.routers.maybe-insecure.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.maybe-insecure.entrypoints: web
+      traefik.http.routers.maybe-insecure.service: maybe
+      traefik.http.routers.maybe-insecure.middlewares: maybe-web-redirect
+      # Websecure
+      traefik.http.routers.maybe.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.maybe.entrypoints: websecure
+      traefik.http.routers.maybe.service: maybe
+      traefik.http.routers.maybe.tls.certresolver: myresolver
+      # Local domain
+      traefik.http.routers.maybe-local-insecure.rule: Host(`maybe.${LOCAL_DOMAIN}`)
+      traefik.http.routers.maybe-local-insecure.entrypoints: web
+      traefik.http.routers.maybe-local-insecure.service: maybe
+      traefik.http.routers.maybe-local-insecure.middlewares: maybe-web-redirect
+      # Local domain secure
+      traefik.http.routers.maybe-local.rule: Host(`maybe.${LOCAL_DOMAIN}`)
+      traefik.http.routers.maybe-local.entrypoints: websecure
+      traefik.http.routers.maybe-local.service: maybe
+      traefik.http.routers.maybe-local.tls: true
+
+  maybe_db:
+    container_name: maybe_db
+    image: postgres:16
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-maybe_user}
+      POSTGRES_DB: ${POSTGRES_DB:-maybe_production}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-maybe_user} -d ${POSTGRES_DB:-maybe_production}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - tipi_main_network
+    profiles:
+      - ${USE_EXTERNAL_DB:+disabled}
+
+networks:
+  tipi_main_network:
+    external: true

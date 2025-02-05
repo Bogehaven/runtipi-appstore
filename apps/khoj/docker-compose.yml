@@ -1,0 +1,97 @@
+version: '3.9'
+
+services:
+  khoj_database:
+    container_name: khoj_database
+    image: ankane/pgvector
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: postgres
+    volumes:
+      - ${APP_DATA_DIR}/data/db:/var/lib/postgresql/data/
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - tipi_main_network
+
+  khoj_sandbox:
+    container_name: khoj_sandbox
+    image: ghcr.io/khoj-ai/terrarium:latest
+    restart: unless-stopped
+    networks:
+      - tipi_main_network
+
+  khoj_search:
+    container_name: khoj_search
+    image: docker.io/searxng/searxng:latest
+    restart: unless-stopped
+    volumes:
+      - ${APP_DATA_DIR}/data/search:/etc/searxng
+    environment:
+      - SEARXNG_BASE_URL=http://localhost:${APP_PORT}/
+    networks:
+      - tipi_main_network
+
+  khoj:
+    container_name: khoj
+    depends_on:
+      khoj_database:
+        condition: service_healthy
+    image: ghcr.io/khoj-ai/khoj:latest
+    restart: unless-stopped
+    ports:
+      - ${APP_PORT}:42110
+    working_dir: /app
+    volumes:
+      - ${APP_DATA_DIR}/data/config:/root/.khoj/
+      - ${APP_DATA_DIR}/data/models/torch:/root/.cache/torch/sentence_transformers
+      - ${APP_DATA_DIR}/data/models/huggingface:/root/.cache/huggingface
+    environment:
+      - POSTGRES_DB=postgres
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_HOST=khoj_database
+      - POSTGRES_PORT=5432
+      - KHOJ_DJANGO_SECRET_KEY=${KHOJ_DJANGO_SECRET_KEY}
+      - KHOJ_DEBUG=False
+      - KHOJ_ADMIN_EMAIL=${KHOJ_ADMIN_EMAIL}
+      - KHOJ_ADMIN_PASSWORD=${KHOJ_ADMIN_PASSWORD}
+      - KHOJ_TERRARIUM_URL=http://khoj_sandbox:8080
+      - KHOJ_SEARXNG_URL=http://khoj_search:8080
+      - TZ=${TZ}
+    command: --host="0.0.0.0" --port=42110 -vv ${KHOJ_ANONYMOUS_MODE:+--anonymous-mode} --non-interactive
+    networks:
+      - tipi_main_network
+    labels:
+      traefik.enable: true
+      traefik.http.middlewares.khoj-web-redirect.redirectscheme.scheme: https
+      traefik.http.services.khoj.loadbalancer.server.port: 42110
+      # Web
+      traefik.http.routers.khoj-insecure.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.khoj-insecure.entrypoints: web
+      traefik.http.routers.khoj-insecure.service: khoj
+      traefik.http.routers.khoj-insecure.middlewares: khoj-web-redirect
+      # Websecure
+      traefik.http.routers.khoj.rule: Host(`${APP_DOMAIN}`)
+      traefik.http.routers.khoj.entrypoints: websecure
+      traefik.http.routers.khoj.service: khoj
+      traefik.http.routers.khoj.tls.certresolver: myresolver
+      # Local domain
+      traefik.http.routers.khoj-local-insecure.rule: Host(`khoj.${LOCAL_DOMAIN}`)
+      traefik.http.routers.khoj-local-insecure.entrypoints: web
+      traefik.http.routers.khoj-local-insecure.service: khoj
+      traefik.http.routers.khoj-local-insecure.middlewares: khoj-web-redirect
+      # Local domain secure
+      traefik.http.routers.khoj-local.rule: Host(`khoj.${LOCAL_DOMAIN}`)
+      traefik.http.routers.khoj-local.entrypoints: websecure
+      traefik.http.routers.khoj-local.service: khoj
+      traefik.http.routers.khoj-local.tls: true
+
+networks:
+  tipi_main_network:
+    external: true

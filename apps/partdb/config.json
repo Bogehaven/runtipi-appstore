@@ -1,0 +1,80 @@
+{
+  "name": "Part-DB",
+  "id": "partdb",
+  "available": true,
+  "short_desc": "An open-source inventory management system for electronic components.",
+  "author": "Jan Bohmer",
+  "port": 5020,
+  "categories": ["development", "utilities"],
+  "tipi_version": 1,
+  "version": "v1.15.1",
+  "source": "https://github.com/Part-DB/Part-DB-server",
+  "exposable": true,
+  "supported_architectures": ["arm64", "amd64"],
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Postgres username",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_USER"
+    },
+    {
+      "type": "password",
+      "label": "Postgres Password",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_PASSWORD"
+    },
+    {
+      "type": "ip",
+      "label": "Postgres Host",
+      "max": 20,
+      "min": 3,
+      "required": true,
+      "env_variable": "PG_HOST"
+    },
+    {
+      "type": "text",
+      "label": "Postgres Port",
+      "max": 4,
+      "min": 4,
+      "required": true,
+      "env_variable": "PG_PORT"
+    },
+    {
+      "type": "text",
+      "label": "Postgres Major Version",
+      "max": 2,
+      "min": 2,
+      "required": true,
+      "env_variable": "PG_VERSION"
+    },
+    {
+      "type": "text",
+      "label": "Language",
+      "max": 2,
+      "min": 2,
+      "required": true,
+      "env_variable": "DEFAULT_LANG"
+    },
+    {
+      "type": "text",
+      "label": "Timezone",
+      "max": 50,
+      "min": 3,
+      "required": true,
+      "env_variable": "DEFAULT_TIMEZONE"
+    },
+    {
+      "type": "text",
+      "label": "Currency",
+      "max": 3,
+      "min": 3,
+      "required": true,
+      "env_variable": "BASE_CURRENCY"
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "name": "LocalAI",
+  "id": "localai",
+  "available": true,
+  "short_desc": "Free, Open Source OpenAI alternative for running AI models locally",
+  "author": "go-skynet",
+  "port": 8080,
+  "categories": ["ai", "development"],
+  "description": "LocalAI is a drop-in replacement REST API that's compatible with OpenAI API specifications for local AI inferencing, supporting multiple model families.",
+  "tipi_version": 1,
+  "version": "latest",
+  "source": "https://github.com/go-skynet/LocalAI",
+  "exposable": true,
+  "supported_architectures": ["amd64", "arm64"],
+  "form_fields": [
+    {
+      "type": "text",
+      "label": "Default Model",
+      "required": false,
+      "default": "phi-2",
+      "hint": "Model to load on startup (e.g., phi-2, llama-3.2-1b-instruct:q4_k_m)",
+      "env_variable": "DEFAULT_MODEL"
+    },
+    {
+      "type": "boolean",
+      "label": "Enable Debug Mode",
+      "required": false,
+      "default": false,
+      "env_variable": "DEBUG"
+    },
+    {
+      "type": "boolean",
+      "label": "Enable GPU Support",
+      "required": false,
+      "default": false,
+      "env_variable": "USE_GPU"
+    },
+    {
+      "type": "text",
+      "label": "Context Size",
+      "required": false,
+      "default": "2048",
+      "hint": "Maximum context size for model inference",
+      "env_variable": "CONTEXT_SIZE"
+    }
+  ]
+}
